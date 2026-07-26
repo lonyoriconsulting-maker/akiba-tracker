@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="theme-color" content="#10201F">
+<title>Akiba — Fedha yako, mpango wako</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --bg:#10201F; --surface:#17302D; --surface-alt:#1E3B37; --border:#2A4643;
+    --gold:#C99A44; --teal:#4FA8A0; --purple:#8C6FB0; --green:#74B187;
+    --rust:#B8613D; --cream:#EDE7D9; --muted:#93A6A1; --dim:#5C716D; --deep:#0D1B19;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--cream);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  .wrap{max-width:480px;margin:0 auto;padding:24px 16px 60px;}
+  h1{font-family:Georgia,"Iowan Old Style",serif;font-weight:600;font-size:30px;margin:0;letter-spacing:.5px;}
+  .tagline{font-size:12.5px;color:var(--muted);margin-top:4px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;}
+  .balance-row{display:flex;justify-content:space-between;align-items:center;margin:18px 0;}
+  .balance-amt{font-family:Georgia,serif;font-size:22px;font-weight:600;}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:11.5px;}
+  .settings{background:var(--surface-alt);border-radius:12px;padding:14px;margin-bottom:18px;display:none;}
+  .settings.open{display:block;}
+  .settings label{flex:1;font-size:11px;display:block;}
+  .settings-row{display:flex;gap:8px;margin-bottom:8px;}
+  input,select{
+    display:block;width:100%;margin-top:4px;background:var(--deep);border:1px solid var(--border);
+    border-radius:8px;padding:8px 10px;color:var(--cream);font-size:12.5px;font-family:inherit;
+  }
+  .jars{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+  .jar-col{display:flex;flex-direction:column;align-items:center;flex:1;min-width:130px;}
+  .jar{position:relative;width:76px;height:128px;background:var(--deep);border:2px solid var(--border);
+    border-radius:10px 10px 16px 16px;overflow:hidden;box-shadow:inset 0 2px 6px rgba(0,0,0,.4);}
+  .jar-fill{position:absolute;bottom:0;left:0;right:0;transition:height .6s ease;}
+  .jar-pct{position:absolute;top:6px;left:0;right:0;text-align:center;font-size:11px;font-weight:700;}
+  .jar-label{margin-top:8px;text-align:center;}
+  .jar-label .l1{font-weight:600;font-size:12.5px;}
+  .jar-label .l2, .jar-label .l3{font-size:10.5px;color:var(--muted);margin-top:1px;}
+  .form-card{margin-bottom:20px;}
+  .type-toggle{display:flex;gap:8px;margin-bottom:10px;}
+  .type-btn{flex:1;padding:8px 0;border-radius:8px;border:1px solid var(--border);background:transparent;
+    color:var(--muted);font-weight:600;font-size:12.5px;}
+  .type-btn.active{border-color:var(--gold);background:#C99A4422;color:var(--gold);}
+  .add-btn{width:100%;padding:10px 0;border-radius:8px;border:none;background:var(--gold);color:var(--deep);
+    font-weight:700;font-size:13px;margin-top:2px;}
+  .log-title{font-size:12.5px;color:var(--muted);margin-bottom:8px;font-weight:600;}
+  .empty{font-size:12px;color:var(--dim);padding:12px 0;}
+  .entry{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--surface-alt);}
+  .entry-meta{font-size:12.5px;font-weight:500;}
+  .entry-date{font-size:10.5px;color:var(--dim);}
+  .entry-right{display:flex;align-items:center;gap:10px;}
+  .entry-amt{font-size:13px;font-weight:600;}
+  .del-btn{background:none;border:none;color:var(--dim);font-size:14px;}
+  button{cursor:pointer;}
+  .settings-actions{display:flex;gap:8px;margin-top:12px;}
+  .btn-outline{flex:1;background:transparent;border:1px solid var(--border);color:var(--cream);
+    border-radius:8px;padding:8px 0;font-size:11.5px;font-weight:600;}
+  .btn-danger{flex:1;background:transparent;border:1px solid var(--rust);color:var(--rust);
+    border-radius:8px;padding:8px 0;font-size:11.5px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Akiba</h1>
+  <div class="tagline">Fedha yako, mpango wako — kila siku hesabu inasogea.</div>
+
+  <div class="card balance-row">
+    <div>
+      <div style="font-size:11px;color:var(--muted)">Salio (Balance)</div>
+      <div id="balanceAmt" class="balance-amt">TSh 0</div>
+    </div>
+    <button class="btn-ghost" onclick="toggleSettings()">Mipangilio</button>
+  </div>
+
+  <div id="settingsPanel" class="settings">
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;">
+      Kipato cha kila siku na siku za kazi kwa mwezi hutumika kukokotoa malengo yako.
+    </div>
+    <div class="settings-row">
+      <label>Kila siku (TSh)<input type="number" id="dailyIncomeInput" onchange="updateSettings()"></label>
+      <label>Siku za kazi/mwezi<input type="number" id="workDaysInput" onchange="updateSettings()"></label>
+    </div>
+    <div style="font-size:11px;color:var(--muted);">
+      Kipato cha mwezi kinachokadiriwa: <b id="monthlyIncomeLabel" style="color:var(--cream)"></b>
+    </div>
+    <div class="settings-actions">
+      <button class="btn-outline" onclick="exportCSV()">Pakua CSV</button>
+      <button class="btn-danger" onclick="resetData()">Futa data</button>
+    </div>
+  </div>
+
+  <div class="jars" id="jars"></div>
+
+  <div class="card form-card">
+    <div class="type-toggle">
+      <button class="type-btn active" id="incomeBtn" onclick="setFormType('income')">Mapato (Income)</button>
+      <button class="type-btn" id="expenseBtn" onclick="setFormType('expense')">Matumizi (Expense)</button>
+    </div>
+    <input type="number" id="formAmount" placeholder="Kiasi (Amount, TSh)" style="margin-bottom:8px;">
+    <select id="formCategory" style="margin-bottom:8px;display:none;">
+      <option value="essentials">Mahitaji (Essentials)</option>
+      <option value="invest">Uwekezaji (Invest)</option>
+      <option value="emergency">Dharura (Emergency)</option>
+      <option value="freedom">Uhuru (Freedom fund)</option>
+      <option value="other">Nyingine (Other)</option>
+    </select>
+    <input type="text" id="formNote" placeholder="Maelezo (note, optional)" style="margin-bottom:10px;">
+    <button class="add-btn" onclick="addEntry()">Ongeza (Add)</button>
+  </div>
+
+  <div>
+    <div class="log-title">Historia ya hivi karibuni (Recent)</div>
+    <div id="entryLog"></div>
+  </div>
+</div>
+
+<script>
+const CATEGORY_META = {
+  essentials: { label: "Mahitaji (Essentials)", color: "#4FA8A0" },
+  invest: { label: "Uwekezaji (Invest)", color: "#C99A44" },
+  emergency: { label: "Dharura (Emergency)", color: "#8C6FB0" },
+  freedom: { label: "Uhuru (Freedom fund)", color: "#74B187" },
+  other: { label: "Nyingine (Other)", color: "#93A6A1" },
+};
+
+let settings = JSON.parse(localStorage.getItem('akiba_settings') || '{}');
+if (!settings.dailyIncome) settings.dailyIncome = 12000;
+if (!settings.workDays) settings.workDays = 30;
+
+let entries = JSON.parse(localStorage.getItem('akiba_entries') || '[]');
+let formType = 'income';
+
+function fmt(n){ return "TSh " + Math.round(n||0).toLocaleString('en-US'); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function isThisMonth(d){
+  const dt = new Date(d), now = new Date();
+  return dt.getFullYear()===now.getFullYear() && dt.getMonth()===now.getMonth();
+}
+
+function toggleSettings(){
+  document.getElementById('settingsPanel').classList.toggle('open');
+}
+
+function updateSettings(){
+  settings.dailyIncome = parseFloat(document.getElementById('dailyIncomeInput').value) || 0;
+  settings.workDays = parseFloat(document.getElementById('workDaysInput').value) || 0;
+  localStorage.setItem('akiba_settings', JSON.stringify(settings));
+  render();
+}
+
+function setFormType(t){
+  formType = t;
+  document.getElementById('incomeBtn').classList.toggle('active', t==='income');
+  document.getElementById('expenseBtn').classList.toggle('active', t==='expense');
+  document.getElementById('formCategory').style.display = t==='expense' ? 'block' : 'none';
+}
+
+function addEntry(){
+  const amt = parseFloat(document.getElementById('formAmount').value);
+  if (!amt || amt <= 0) return;
+  const category = formType === 'income' ? 'income' : document.getElementById('formCategory').value;
+  const note = document.getElementById('formNote').value;
+  entries.unshift({ id: Date.now().toString(), kind: formType, amount: amt, category, note, date: todayISO() });
+  localStorage.setItem('akiba_entries', JSON.stringify(entries));
+  document.getElementById('formAmount').value = '';
+  document.getElementById('formNote').value = '';
+  render();
+}
+
+function deleteEntry(id){
+  entries = entries.filter(e => e.id !== id);
+  localStorage.setItem('akiba_entries', JSON.stringify(entries));
+  render();
+}
+
+function csvEscape(val){
+  const s = String(val ?? '');
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function exportCSV(){
+  if (entries.length === 0){
+    alert('Hakuna data ya kupakua bado.');
+    return;
+  }
+  const header = ['date','kind','category','amount','note'];
+  const rows = entries
+    .slice()
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .map(e => [e.date, e.kind, e.category, e.amount, e.note || '']);
+  const csv = [header, ...rows].map(r => r.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'akiba-' + todayISO() + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function resetData(){
+  if (!confirm('Futa historia yote ya mapato na matumizi? Hatua hii haiwezi kutenduliwa.')) return;
+  entries = [];
+  localStorage.setItem('akiba_entries', JSON.stringify(entries));
+  render();
+}
+
+function jarHTML(label, sub1, pct, color, amount, goal){
+  const clamped = Math.max(0, Math.min(100, pct));
+  const pctColor = clamped > 80 ? '#0D1B19' : '#EDE7D9';
+  return `<div class="jar-col">
+    <div class="jar">
+      <div class="jar-fill" style="height:${clamped}%;background:linear-gradient(180deg, ${color}CC, ${color});"></div>
+      <div class="jar-pct" style="color:${pctColor}">${Math.round(clamped)}%</div>
+    </div>
+    <div class="jar-label">
+      <div class="l1">${label}</div>
+      <div class="l2">${sub1}</div>
+      <div class="l3">${fmt(amount)} / ${fmt(goal)}</div>
+    </div>
+  </div>`;
+}
+
+function render(){
+  document.getElementById('dailyIncomeInput').value = settings.dailyIncome;
+  document.getElementById('workDaysInput').value = settings.workDays;
+
+  const monthlyIncome = settings.dailyIncome * settings.workDays;
+  document.getElementById('monthlyIncomeLabel').textContent = fmt(monthlyIncome);
+
+  const essentialsTarget = monthlyIncome * 0.55;
+  const investTarget = monthlyIncome * 0.1;
+  const emergencyGoal = monthlyIncome * 4;
+  const freedomGoal = monthlyIncome * 200;
+
+  let income=0, expense=0, essentialsMonth=0, investMonth=0, emergencyTotal=0, freedomTotal=0;
+  entries.forEach(e=>{
+    if (e.kind==='income'){ income += e.amount; }
+    else {
+      expense += e.amount;
+      if (e.category==='essentials' && isThisMonth(e.date)) essentialsMonth += e.amount;
+      if (e.category==='invest' && isThisMonth(e.date)) investMonth += e.amount;
+      if (e.category==='emergency') emergencyTotal += e.amount;
+      if (e.category==='freedom') freedomTotal += e.amount;
+    }
+  });
+  const balance = income - expense;
+  const balEl = document.getElementById('balanceAmt');
+  balEl.textContent = fmt(balance);
+  balEl.style.color = balance >= 0 ? '#74B187' : '#B8613D';
+
+  document.getElementById('jars').innerHTML =
+    jarHTML('Mahitaji', 'mwezi huu', essentialsTarget? essentialsMonth/essentialsTarget*100:0, CATEGORY_META.essentials.color, essentialsMonth, essentialsTarget) +
+    jarHTML('Uwekezaji', 'mwezi huu', investTarget? investMonth/investTarget*100:0, CATEGORY_META.invest.color, investMonth, investTarget) +
+    jarHTML('Dharura', 'lengo la jumla', emergencyGoal? emergencyTotal/emergencyGoal*100:0, CATEGORY_META.emergency.color, emergencyTotal, emergencyGoal) +
+    jarHTML('Uhuru', 'badilisha kipato', freedomGoal? freedomTotal/freedomGoal*100:0, CATEGORY_META.freedom.color, freedomTotal, freedomGoal);
+
+  const logEl = document.getElementById('entryLog');
+  if (entries.length === 0){
+    logEl.innerHTML = '<div class="empty">Bado hujaongeza kitu. Anza kwa kuongeza mapato ya leo.</div>';
+  } else {
+    logEl.innerHTML = entries.slice(0,25).map(e=>{
+      const label = e.kind==='income' ? 'Mapato' : (CATEGORY_META[e.category]?.label || e.category);
+      const noteStr = e.note ? ' · ' + e.note : '';
+      const sign = e.kind==='income' ? '+' : '-';
+      const color = e.kind==='income' ? '#74B187' : '#B8613D';
+      return `<div class="entry">
+        <div>
+          <div class="entry-meta">${label}${noteStr}</div>
+          <div class="entry-date">${e.date}</div>
+        </div>
+        <div class="entry-right">
+          <div class="entry-amt" style="color:${color}">${sign}${fmt(e.amount)}</div>
+          <button class="del-btn" onclick="deleteEntry('${e.id}')">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+render();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
